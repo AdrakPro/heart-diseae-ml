@@ -18,7 +18,7 @@ if __name__ == "__main__":
     X_train, X_test = standardize(X_train, X_test)
 
     n_classes = y_one_hot.shape[1]
-    model = LogisticRegression(learning_rate=0.01, num_iterations=1000)
+    model = LogisticRegression(learning_rate=0.001, num_iterations=1000, optimizer="sgd")
     model.train(X_train, y_train, n_classes)
 
     y_pred = model.predict(X_test)

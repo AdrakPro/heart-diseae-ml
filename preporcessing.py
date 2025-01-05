@@ -1,77 +1,77 @@
 import numpy as np
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
 
-def train_test_split(X, y, test_size=0.2, random_state=None):
-    """
-    - X (np.ndarray): Feature matrix of shape (n_samples, n_features)
-    - y (np.ndarray): Target vector of shape (n_samples, 1)
-    - test_size (float): Proportion of the data to include in the test split.
-    - random_state (int): Seed for random number generator for reproducibility.
+class Preprocessor:
+    def __init__(self, data, random_state=2137, test_size=0.2):
+        self.data = data
+        self.random_state = random_state
+        self.test_size = test_size
 
-    Returns:
-    - X_train (np.ndarray): Training feature matrix
-    - X_test (np.ndarray): Testing feature matrix
-    - y_train (np.ndarray): Training target vector
-    - y_test (np.ndarray): Testing target vector
-    """
+    def handle_outliers(self, X_train, y_train):
+        iqr_factor = 1.5
+        numeric_cols = X_train.select_dtypes(include=[np.number]).columns
+        mask = pd.Series(True, index=X_train.index)
 
-    if random_state:
-        np.random.seed(random_state)
+        for col in numeric_cols:
+            Q1 = X_train[col].quantile(0.25)
+            Q3 = X_train[col].quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - iqr_factor * IQR
+            upper_bound = Q3 + iqr_factor * IQR
+            mask &= (X_train[col] >= lower_bound) & (X_train[col] <= upper_bound)
 
-    # Generate an array of indices of all samples
-    indices = np.arange(X.shape[0])
-    np.random.shuffle(indices)
-    # Split index is position in shuffled list where we separate training
-    # data from test data
-    split_idx = int(X.shape[0] * (1 - test_size))
-    train_idx, test_idx = indices[:split_idx], indices[split_idx:]
+        # Reset indices after filtering to avoid index misalignment
+        X_train = X_train[mask].reset_index(drop=True)
+        y_train = y_train[mask].reset_index(drop=True)
 
-    return X[train_idx], X[test_idx], y[train_idx], y[test_idx]
+        return X_train, y_train
 
+    def split_data(self):
+        X = self.data.drop("num", axis=1)
+        y = self.data["num"]
 
-def preprocess_data(X):
-    """
-    Preprocesses the data by handling NaN values in the feature matrix.
+        return train_test_split(
+            X, y, test_size=self.test_size, random_state=self.random_state
+        )
 
-    Parameters:
-    - X (np.ndarray): Feature matrix with potential NaN values.
+    def define_transformers(self, X_train):
+        numeric_cols = X_train.select_dtypes(include=[np.number]).columns
+        categorical_cols = X_train.select_dtypes(include=["object"]).columns
 
-    Returns:
-    - X_processed (np.ndarray): Feature matrix with NaN values imputed.
-    """
+        numeric_transformer = Pipeline(
+            [
+                ("scaler", StandardScaler()),
+            ]
+        )
 
-    nan_mask = np.isnan(X)
+        categorical_transformer = Pipeline(
+            [
+                ("onehot", OneHotEncoder(handle_unknown="ignore")),
+            ]
+        )
 
-    if np.any(nan_mask):
-        # Calculate mean of each feature (ignoring NaNs)
-        mean_values = np.nanmean(X, axis=0)
-        # Replace NaNs with corresponding feature means
-        X[nan_mask] = np.take(mean_values, np.where(nan_mask)[1])
+        preprocessor = ColumnTransformer(
+            transformers=[
+                ("num", numeric_transformer, numeric_cols),
+                ("cat", categorical_transformer, categorical_cols),
+            ]
+        )
 
-    return X
+        return preprocessor
 
+    def run(self):
+        X_train, X_test, y_train, y_test = self.split_data()
 
-def standardize(X_train, X_test):
-    """
-    Standardizes the feature matrix so that each feature has zero mean and
-    unit variance, using the statistics from the training set to avoid data
-    leakage.
+        # X_train, y_train = self.handle_outliers(X_train, y_train)
 
-    Parameters:
-    - X_train (np.ndarray): Training feature matrix of shape (n_samples_train, n_features)
-    - X_test (np.ndarray): Testing feature matrix of shape (n_samples_test, n_features)
+        preprocessor = self.define_transformers(X_train)
 
-    Returns:
-    - X_train_standardized (np.ndarray): Standardized training feature matrix
-    - X_test_standardized (np.ndarray): Standardized testing feature matrix
-    """
-    mean = np.mean(X_train, axis=0)
-    std = np.std(X_train, axis=0)
+        X_train_processed = preprocessor.fit_transform(X_train)
+        X_test_processed = preprocessor.transform(X_test)
 
-    # To prevent division by zero, add a small epsilon to std where std is zero
-    std = np.where(std == 0, 1e-8, std)
-
-    X_train_standardized = (X_train - mean) / std
-    X_test_standardized = (X_test - mean) / std
-
-    return X_train_standardized, X_test_standardized
+        return X_train_processed, X_test_processed, y_train, y_test

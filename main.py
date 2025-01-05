@@ -1,27 +1,72 @@
-from sklearn.preprocessing import OneHotEncoder
-from data_loader import load_heart_disease_data
-from preporcessing import train_test_split, standardize, preprocess_data
-from logistic_regression import LogisticRegression
 import numpy as np
+import pandas as pd
+
+from logistic_regression import BinaryClassificationModel
+from preporcessing import Preprocessor
+from multi_logistic_regression import MultiClassificationModel
+from utils import log_metrics
+
+
+def main():
+    data_path = "data/heart.csv"
+    data = pd.read_csv(data_path)
+
+    random_state = 2137
+    learning_rate = 0.01
+    num_iterations = 1000
+    momentum = 0.9
+    beta2 = 0.999
+    epsilon = 1e-8
+
+    transform_to_binary_classification = True
+
+    X_train, X_test, y_train, y_test = Preprocessor(data, random_state).run()
+
+    if transform_to_binary_classification:
+        y_train = y_train.apply(lambda x: 1 if x in [1, 2, 3, 4] else 0)
+        y_test = y_test.apply(lambda x: 1 if x in [1, 2, 3, 4] else 0)
+
+        y_train = y_train.values.reshape(-1, 1)
+
+        model = BinaryClassificationModel(learning_rate, num_iterations)
+        model.train(X_train, y_train)
+
+        accuracy, conf_matrix, class_report, logloss = model.evaluate(
+            X_test, y_test
+        )
+
+        log_metrics(
+            learning_rate,
+            num_iterations,
+            accuracy,
+            conf_matrix,
+            class_report,
+            logloss,
+        )
+
+    else:
+        n_classes = len(np.unique(y_train))
+        y_train = pd.get_dummies(y_train).values
+
+        model = MultiClassificationModel(
+            learning_rate, num_iterations, momentum, beta2, epsilon, optimizer="adam"
+        )
+        model.train(X_train, y_train, n_classes)
+
+        accuracy, conf_matrix, class_report, logloss, roc_auc = model.evaluate(
+            X_test, y_test
+        )
+
+        log_metrics(
+            learning_rate,
+            num_iterations,
+            accuracy,
+            conf_matrix,
+            class_report,
+            logloss,
+            roc_auc,
+        )
+
 
 if __name__ == "__main__":
-    # Data load
-    X, y = load_heart_disease_data()
-
-    # One-hot encoding
-    encoder = OneHotEncoder(sparse_output=False)
-    y_one_hot = encoder.fit_transform(y)
-
-    # Preprocessing
-    X = preprocess_data(X)
-    X_train, X_test, y_train, y_test = train_test_split(X, y_one_hot, test_size=0.2, random_state=42)
-    X_train, X_test = standardize(X_train, X_test)
-
-    n_classes = y_one_hot.shape[1]
-    model = LogisticRegression(learning_rate=0.001, num_iterations=1000, optimizer="sgd")
-    model.train(X_train, y_train, n_classes)
-
-    y_pred = model.predict(X_test)
-    y_test_labels = np.argmax(y_test, axis=1)
-    accuracy = np.mean(y_pred == y_test_labels) * 100
-    print(f"Test Set Accuracy: {accuracy:.2f}%")
+    main()

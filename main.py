@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 
-from hyperparams_tuning import tune_binary_with_gridsearch, tune_multi_with_gridsearch
+from hyperparams_tuning import tune_binary_with_gridsearch, tune_multi
 from logistic_regression import BinaryClassificationModel
 from multi_logistic_regression import MultiClassificationModel
 from preporcessing import Preprocessor
@@ -10,7 +10,7 @@ from utils import log_metrics
 
 
 def main():
-    # binary params 0.1 300
+    # binary params 0.25 700
     # multi params 0.01 300
     data_path = "data/heart.csv"
     data = pd.read_csv(data_path)
@@ -22,13 +22,13 @@ def main():
     hyperparams = {
         "learning_rate": 0.01,
         "num_iterations": 300,
-        "momentum": 0.9,
-        "beta2": 0.99,
-        "epsilon": 1e-8,
+        "momentum": 0.5,
+        "beta2": 0.999,
+        "epsilon": 1e-7,
     }
 
-    tune_hyperparameters = True
-    transform_to_binary_classification = True
+    tune_hyperparameters = False
+    transform_to_binary_classification = False
 
     X_train, X_test, y_train, y_test = Preprocessor(data, random_state, test_size).run()
 
@@ -59,9 +59,13 @@ def main():
         )
 
     else:
+        n_classes = len(np.unique(y_train))
+        encoder = OneHotEncoder(sparse_output=False)
+        y_train = y_train.values.reshape(-1, 1)
+        y_train = encoder.fit_transform(y_train)
 
         if tune_hyperparameters:
-            model = tune_multi_with_gridsearch(X_train, y_train)
+            model = tune_multi(X_train, y_train, n_classes)
         else:
             model = MultiClassificationModel(
                 n_classes,

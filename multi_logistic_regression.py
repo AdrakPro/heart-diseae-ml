@@ -156,20 +156,22 @@ class MultiClassificationModel:
         Returns:
         - (np.ndarray): Predicted labels.
         """
+        proba = self.predict_proba(X)
+
+        return np.argmax(proba, axis=1)
+
+    def predict_proba(self, X):
         z = np.dot(X, self.weights) + self.bias
-        y_hat = softmax(z)
-        return np.argmax(y_hat, axis=1)
+        return softmax(z)
 
     def evaluate(self, X, y):
-        z = np.dot(X, self.weights) + self.bias
-        y_hat = softmax(z)
-
+        y_proba = self.predict_proba(X)
         y_pred = self.predict(X)
 
         accuracy = accuracy_score(y, y_pred)
         conf_matrix = confusion_matrix(y, y_pred)
         class_report = classification_report(y, y_pred, zero_division=0)
-        logloss = log_loss(y, y_hat)
-        roc_auc = roc_auc_score(y, y_hat, multi_class="ovr")
+        logloss = log_loss(y, y_proba)
+        roc_auc = roc_auc_score(y, y_proba, multi_class="ovr")
 
         return accuracy, conf_matrix, class_report, logloss, roc_auc

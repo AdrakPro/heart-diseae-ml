@@ -8,19 +8,23 @@ from utils import log_metrics
 
 
 def main():
+    # binary params 0.1 300
+    # multi params 0.01 300
     data_path = "data/heart.csv"
     data = pd.read_csv(data_path)
 
     random_state = 2137
+    test_size = 0.33
+
     learning_rate = 0.01
-    num_iterations = 1000
+    num_iterations = 300
     momentum = 0.9
-    beta2 = 0.999
+    beta2 = 0.99
     epsilon = 1e-8
 
-    transform_to_binary_classification = True
+    transform_to_binary_classification = False
 
-    X_train, X_test, y_train, y_test = Preprocessor(data, random_state).run()
+    X_train, X_test, y_train, y_test = Preprocessor(data, random_state, test_size).run()
 
     if transform_to_binary_classification:
         y_train = y_train.apply(lambda x: 1 if x in [1, 2, 3, 4] else 0)
@@ -31,9 +35,7 @@ def main():
         model = BinaryClassificationModel(learning_rate, num_iterations)
         model.train(X_train, y_train)
 
-        accuracy, conf_matrix, class_report, logloss = model.evaluate(
-            X_test, y_test
-        )
+        accuracy, conf_matrix, class_report, logloss = model.evaluate(X_test, y_test)
 
         log_metrics(
             learning_rate,

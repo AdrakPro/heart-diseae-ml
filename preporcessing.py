@@ -7,29 +7,12 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
 
 class Preprocessor:
-    def __init__(self, data, random_state=2137, test_size=0.2):
-        self.data = data
+    def __init__(self, data, random_state=2137, test_size=0.33):
+        # Remove outliners
+        self.data = data[data["trestbps"] != 0]
+
         self.random_state = random_state
         self.test_size = test_size
-
-    def handle_outliers(self, X_train, y_train):
-        iqr_factor = 1.5
-        numeric_cols = X_train.select_dtypes(include=[np.number]).columns
-        mask = pd.Series(True, index=X_train.index)
-
-        for col in numeric_cols:
-            Q1 = X_train[col].quantile(0.25)
-            Q3 = X_train[col].quantile(0.75)
-            IQR = Q3 - Q1
-            lower_bound = Q1 - iqr_factor * IQR
-            upper_bound = Q3 + iqr_factor * IQR
-            mask &= (X_train[col] >= lower_bound) & (X_train[col] <= upper_bound)
-
-        # Reset indices after filtering to avoid index misalignment
-        X_train = X_train[mask].reset_index(drop=True)
-        y_train = y_train[mask].reset_index(drop=True)
-
-        return X_train, y_train
 
     def split_data(self):
         X = self.data.drop("num", axis=1)

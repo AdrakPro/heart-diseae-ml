@@ -1,7 +1,11 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn.metrics import accuracy_score, confusion_matrix, \
-    classification_report, log_loss
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    classification_report,
+    log_loss,
+)
 
 
 def sigmoid(z):

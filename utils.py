@@ -12,7 +12,7 @@ def log_metrics(
     conf_matrix,
     class_report,
     log_loss,
-    roc_auc = 0,
+    roc_auc=0,
 ):
     log_filename = "model_metrics.log"
 

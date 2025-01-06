@@ -43,7 +43,7 @@ class BinaryClassificationModel:
 
         return cost
 
-    def train(self, X, y):
+    def fit(self, X, y):
         """
         Train the model with gradient descent.
         """
@@ -65,7 +65,7 @@ class BinaryClassificationModel:
         plt.ylabel("Cost")
         plt.xlabel("Iterations (per hundreds)")
         plt.title(f"Learning rate = {self.learning_rate}")
-        plt.show()
+        # plt.show()
 
     def predict(self, X):
         """

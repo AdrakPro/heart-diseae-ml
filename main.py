@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
 
+from hyperparams_tuning import tune_binary_with_gridsearch, tune_multi_with_gridsearch
 from logistic_regression import BinaryClassificationModel
-from preporcessing import Preprocessor
 from multi_logistic_regression import MultiClassificationModel
+from preporcessing import Preprocessor
 from utils import log_metrics
 
 
@@ -16,12 +17,16 @@ def main():
     random_state = 2137
     test_size = 0.33
 
-    learning_rate = 0.01
-    num_iterations = 300
-    momentum = 0.9
-    beta2 = 0.99
-    epsilon = 1e-8
+    # Default params
+    hyperparams = {
+        "learning_rate": 0.01,
+        "num_iterations": 300,
+        "momentum": 0.9,
+        "beta2": 0.99,
+        "epsilon": 1e-8,
+    }
 
+    tune_hyperparameters = False
     transform_to_binary_classification = False
 
     X_train, X_test, y_train, y_test = Preprocessor(data, random_state, test_size).run()
@@ -31,15 +36,21 @@ def main():
         y_test = y_test.apply(lambda x: 1 if x in [1, 2, 3, 4] else 0)
 
         y_train = y_train.values.reshape(-1, 1)
+        y_test = y_test.values
 
-        model = BinaryClassificationModel(learning_rate, num_iterations)
-        model.train(X_train, y_train)
+        if tune_hyperparameters:
+            model = tune_binary_with_gridsearch(X_train, y_train)
+        else:
+            model = BinaryClassificationModel(
+                hyperparams["learning_rate"], hyperparams["num_iterations"]
+            )
+
+        model.fit(X_train, y_train)
 
         accuracy, conf_matrix, class_report, logloss = model.evaluate(X_test, y_test)
-
         log_metrics(
-            learning_rate,
-            num_iterations,
+            hyperparams["learning_rate"],
+            hyperparams["num_iterations"],
             accuracy,
             conf_matrix,
             class_report,
@@ -50,18 +61,27 @@ def main():
         n_classes = len(np.unique(y_train))
         y_train = pd.get_dummies(y_train).values
 
-        model = MultiClassificationModel(
-            learning_rate, num_iterations, momentum, beta2, epsilon, optimizer="adam"
-        )
-        model.train(X_train, y_train, n_classes)
+        if tune_hyperparameters:
+            model = tune_multi_with_gridsearch(X_train, y_train)
+        else:
+            model = MultiClassificationModel(
+                n_classes,
+                hyperparams["learning_rate"],
+                hyperparams["num_iterations"],
+                hyperparams["momentum"],
+                hyperparams["beta2"],
+                hyperparams["epsilon"],
+                optimizer="adam",
+            )
+
+        model.fit(X_train, y_train)
 
         accuracy, conf_matrix, class_report, logloss, roc_auc = model.evaluate(
             X_test, y_test
         )
-
         log_metrics(
-            learning_rate,
-            num_iterations,
+            hyperparams["learning_rate"],
+            hyperparams["num_iterations"],
             accuracy,
             conf_matrix,
             class_report,

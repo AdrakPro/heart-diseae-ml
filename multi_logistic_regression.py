@@ -42,17 +42,19 @@ def compute_cost(y, y_hat):
 class MultiClassificationModel:
     def __init__(
         self,
-        learning_rate=0.01,
-        num_iterations=1000,
-        momentum=0.9,
-        beta2=0.999,
-        epsilon=1e-8,
-        optimizer="sgd",
+        n_classes,
+        learning_rate,
+        num_iterations,
+        momentum,
+        beta2,
+        epsilon,
+        optimizer,
     ):
         """
         Initialize the Logistic Regression model.
 
         Parameters:
+        - n_classes (int): Number of model classes
         - learning_rate (float): Learning rate for optimization.
         - num_iterations (int): Number of iterations for training.
         - momentum (float): Momentum parameter (used in Momentum and Adam).
@@ -60,6 +62,7 @@ class MultiClassificationModel:
         - epsilon (float): Small constant to avoid division by zero in Adam.
         - optimizer (str): Optimization method ("sgd", "momentum", "adam").
         """
+        self.n_classes = n_classes
         self.learning_rate = learning_rate
         self.num_iterations = num_iterations
         self.momentum = momentum
@@ -72,9 +75,8 @@ class MultiClassificationModel:
         self.v_db = None
         self.weights = None
         self.bias = None
-        self.n_classes = None
 
-    def init_params(self, n_features, n_classes):
+    def init_params(self, n_features):
         """
         Initializes weights and bias.
 
@@ -82,27 +84,25 @@ class MultiClassificationModel:
         - n_features (int): Number of features.
         - n_classes (int): Number of classes.
         """
-        self.weights = np.zeros((n_features, n_classes))
-        self.bias = np.zeros((1, n_classes))
-        self.m_dw = np.zeros((n_features, n_classes))
-        self.v_dw = np.zeros((n_features, n_classes))
-        self.m_db = np.zeros((1, n_classes))
-        self.v_db = np.zeros((1, n_classes))
+        self.weights = np.zeros((n_features, self.n_classes))
+        self.bias = np.zeros((1, self.n_classes))
+        self.m_dw = np.zeros((n_features, self.n_classes))
+        self.v_dw = np.zeros((n_features, self.n_classes))
+        self.m_db = np.zeros((1, self.n_classes))
+        self.v_db = np.zeros((1, self.n_classes))
 
-    def train(self, X, y, n_classes):
+    def fit(self, X, y):
         """
         Trains the multiclass model.
 
         Parameters:
         - X (np.ndarray): Feature matrix.
         - y (np.ndarray): One-hot encoded labels.
-        - n_classes (int): Number of classes.
         """
         if y.ndim == 1:
             y = y.reshape(-1, 1)
-        self.n_classes = n_classes
         n_samples, n_features = X.shape
-        self.init_params(n_features, n_classes)
+        self.init_params(n_features)
 
         for i in range(1, self.num_iterations + 1):
             z = np.dot(X, self.weights) + self.bias

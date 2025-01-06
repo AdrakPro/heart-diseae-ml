@@ -24,7 +24,7 @@ def log_metrics(
 
     log_entry = f"[{learning_rate} - {num_iterations}]: \n"
     log_entry += (
-        f"Accuracy: {accuracy:.2f}, Log Loss: {log_loss:.4f}\n, Roc: {roc_auc:.4f}"
+        f"Accuracy: {accuracy:.2f}, Log Loss: {log_loss:.4f}, Roc: {roc_auc:.4f}\n"
     )
     log_entry += f"Confusion Matrix:\n{conf_matrix}\n"
     log_entry += f"Classification Report:\n{class_report}\n"

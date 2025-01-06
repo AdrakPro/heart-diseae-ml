@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import OneHotEncoder
 
 from hyperparams_tuning import tune_binary_with_gridsearch, tune_multi_with_gridsearch
 from logistic_regression import BinaryClassificationModel
@@ -26,8 +27,8 @@ def main():
         "epsilon": 1e-8,
     }
 
-    tune_hyperparameters = False
-    transform_to_binary_classification = False
+    tune_hyperparameters = True
+    transform_to_binary_classification = True
 
     X_train, X_test, y_train, y_test = Preprocessor(data, random_state, test_size).run()
 
@@ -58,8 +59,6 @@ def main():
         )
 
     else:
-        n_classes = len(np.unique(y_train))
-        y_train = pd.get_dummies(y_train).values
 
         if tune_hyperparameters:
             model = tune_multi_with_gridsearch(X_train, y_train)

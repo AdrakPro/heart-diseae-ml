@@ -68,29 +68,11 @@ class MultiClassClassifier(BaseEstimator, ClassifierMixin):
         y_true = np.argmax(y, axis=1) if len(y.shape) > 1 else y
         return np.mean(y_pred == y_true)
 
+    def evaluate(self, X, y):
+        return self.model.evaluate(X, y)
 
 def tune_binary_with_gridsearch(X_train, y_train):
-    param_grid = {
-        "learning_rate": (0.01, 0.1),
-        "num_iterations": (100, 1000),
-    }
 
-    model = BinaryClassifier()
-    grid_search = GridSearchCV(
-        estimator=model,
-        param_grid=param_grid,
-        cv=5,
-        scoring="accuracy",
-        n_jobs=-1,
-    )
-    grid_search.fit(X_train, y_train)
-
-    best_model = grid_search.best_estimator_
-    print(
-        f"Best Binary Model Params: {grid_search.best_params_}, Best Score: {grid_search.best_score_}"
-    )
-
-    return best_model
 
 
 def tune_multi_with_gridsearch(X_train, y_train):
@@ -103,18 +85,19 @@ def tune_multi_with_gridsearch(X_train, y_train):
     }
 
     model = MultiClassClassifier(
-        X_train.shape[1],
+        5,
         param_grid["learning_rate"][0],
         param_grid["num_iterations"][0],
         param_grid["momentum"][0],
         param_grid["beta2"][0],
         param_grid["epsilon"][0],
     )
+
     grid_search = GridSearchCV(
-        estimator=model, param_grid=param_grid, cv=3, scoring="accuracy"
+        estimator=model, param_grid=param_grid, cv=2, scoring="accuracy", n_jobs=-1
     )
 
-    y_train_labels = np.argmax(y_train, axis=1) if len(y_train.shape) > 1 else y_train
+    y_train_labels = np.argmax(y_train, axis=1)
     grid_search.fit(X_train, y_train_labels)
 
     best_model = grid_search.best_estimator_

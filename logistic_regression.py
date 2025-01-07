@@ -1,5 +1,4 @@
 import numpy as np
-from matplotlib import pyplot as plt
 from sklearn.metrics import (
     accuracy_score,
     confusion_matrix,
@@ -43,30 +42,37 @@ class BinaryClassificationModel:
 
         return cost
 
-    def fit(self, X, y):
+    def fit(self, X, y, batch_size=128):
         """
         Train the model with gradient descent.
         """
         self.init_params(X.shape[1])
-        costs = []
 
-        for i in range(self.num_iterations):
-            cost = self.forward(X, y)
+        n_samples = X.shape[0]
+        num_batches = int(np.ceil(n_samples / batch_size))
 
-            self.w -= self.learning_rate * self.dw
-            self.b -= self.learning_rate * self.db
+        for i in range(1, self.num_iterations + 1):
+            indices = np.arange(n_samples)
+            np.random.seed(2137)  # todo add to self
+            np.random.shuffle(indices)
+            X = X[indices]
+            y = y[indices]
+
+            for batch in range(num_batches):
+                start = batch * batch_size
+                end = min(start + batch_size, n_samples)
+                X_batch = X[start:end]
+                y_batch = y[start:end]
+
+                cost = self.forward(X_batch, y_batch)
+
+                self.w -= self.learning_rate * self.dw
+                self.b -= self.learning_rate * self.db
 
             if i % 100 == 0:
-                costs.append(cost)
                 print(f"Iteration {i}: Cost = {cost:.4f}")
 
-        # Plot the cost function
-        plt.plot(np.squeeze(costs))
-        plt.ylabel("Cost")
-        plt.xlabel("Iterations (per hundreds)")
-        plt.title(f"Learning rate = {self.learning_rate}")
-        # plt.show()
-
+    #  todo batch cost plot
     def predict(self, X):
         """
         Predict the labels for a dataset X.

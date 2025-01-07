@@ -17,6 +17,7 @@ def main():
 
     random_state = 2137
     test_size = 0.33
+    batch_size = 128
 
     # Default params
     hyperparams = {
@@ -40,13 +41,13 @@ def main():
         y_test = y_test.values
 
         if tune_hyperparameters:
-            model = tune_binary_with_gridsearch(X_train, y_train)
+            model = tune_binary_with_gridsearch(X_train, y_train, batch_size)
         else:
             model = BinaryClassificationModel(
                 hyperparams["learning_rate"], hyperparams["num_iterations"]
             )
 
-        model.fit(X_train, y_train)
+        model.fit(X_train, y_train, batch_size)
 
         accuracy, conf_matrix, class_report, logloss = model.evaluate(X_test, y_test)
         log_metrics(
@@ -65,7 +66,7 @@ def main():
         y_train = encoder.fit_transform(y_train)
 
         if tune_hyperparameters:
-            model = tune_multi(X_train, y_train, n_classes)
+            model = tune_multi(X_train, y_train, n_classes, batch_size)
         else:
             model = MultiClassificationModel(
                 n_classes,
@@ -77,7 +78,7 @@ def main():
                 optimizer="adam",
             )
 
-        model.fit(X_train, y_train)
+        model.fit(X_train, y_train, batch_size)
 
         accuracy, conf_matrix, class_report, logloss, roc_auc = model.evaluate(
             X_test, y_test

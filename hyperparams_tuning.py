@@ -76,7 +76,7 @@ class MultiClassClassifier(BaseEstimator, ClassifierMixin):
         return self.model.predict_proba(X)
 
 
-def tune_binary_with_gridsearch(X_train, y_train):
+def tune_binary_with_gridsearch(X_train, y_train, batch_size):
     param_grid = {
         "learning_rate": [0.1, 0.25, 0.01, 0.05, 0.001, 0.3, 0.2, 0.24],
         "num_iterations": (200, 300, 400, 500, 600, 700, 800, 900, 1000),
@@ -90,7 +90,7 @@ def tune_binary_with_gridsearch(X_train, y_train):
         scoring="accuracy",
         n_jobs=-1,
     )
-    grid_search.fit(X_train, y_train)
+    grid_search.fit(X_train, y_train, batch_size)
 
     best_model = grid_search.best_estimator_
     print(
@@ -112,10 +112,10 @@ def roc_auc_direct_scorer(estimator, X, y):
     return roc_auc_score(y, y_proba, multi_class="ovr")
 
 
-def tune_multi(X_train, y_train, n_classes):
+def tune_multi(X_train, y_train, n_classes, batch_size):
     param_grid = {
         "learning_rate": [0.1, 0.25, 0.01, 0.001, 0.2, 0.3],
-        "num_iterations": [200, 300, 400, 500],
+        "num_iterations": [200, 300, 400, 500, 600, 700],
         "momentum": [0.6, 0.65, 0.7, 0.8, 0.85, 0.9, 0.95],
         "beta2": [0.97, 0.98, 0.99, 0.999],
         "epsilon": [1e-8, 1e-7, 1e-6],
@@ -140,7 +140,7 @@ def tune_multi(X_train, y_train, n_classes):
         n_jobs=-1,
     )
 
-    grid_search.fit(X_train, y_train)
+    grid_search.fit(X_train, y_train, batch_size)
 
     best_model = grid_search.best_estimator_
     print(

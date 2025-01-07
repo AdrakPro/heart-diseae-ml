@@ -76,6 +76,7 @@ class MultiClassificationModel:
         self.weights = None
         self.bias = None
 
+    # Zamiast 0 uzyć randomowych liczb jako poczatkowe wagi
     def init_params(self, n_features):
         """
         Initializes weights and bias.
@@ -91,7 +92,7 @@ class MultiClassificationModel:
         self.m_db = np.zeros((1, self.n_classes))
         self.v_db = np.zeros((1, self.n_classes))
 
-    def fit(self, X, y):
+    def fit(self, X, y, batch_size=128):
         """
         Trains the multiclass model.
 
@@ -99,49 +100,66 @@ class MultiClassificationModel:
         - X (np.ndarray): Feature matrix.
         - y (np.ndarray): One-hot encoded labels.
         """
-        if y.ndim == 1:
-            y = y.reshape(-1, 1)
         n_samples, n_features = X.shape
+        num_batches = int(np.ceil(n_samples / batch_size))
         self.init_params(n_features)
 
         for i in range(1, self.num_iterations + 1):
+            indices = np.arange(n_samples)
+            np.random.seed(2137)  # todo add to self
+            np.random.shuffle(indices)
+            X = X[indices]
+            y = y[indices]
+
+            for batch in range(num_batches):
+                start = batch * batch_size
+                end = min(start + batch_size, n_samples)
+                X_batch = X[start:end]
+                y_batch = y[start:end]
+
+                z = np.dot(X_batch, self.weights) + self.bias
+                y_hat = softmax(z)
+
+                # Compute gradients
+                dw = (1 / X_batch.shape[0]) * np.dot(X_batch.T, (y_hat - y_batch))
+                db = (1 / X_batch.shape[0]) * np.sum(
+                    y_hat - y_batch, axis=0, keepdims=True
+                )
+
+                # Update parameters
+                if self.optimizer == "sgd":
+                    self.weights -= self.learning_rate * dw
+                    self.bias -= self.learning_rate * db
+                elif self.optimizer == "momentum":
+                    self.m_dw = self.momentum * self.m_dw + (1 - self.momentum) * dw
+                    self.m_db = self.momentum * self.m_db + (1 - self.momentum) * db
+                    self.weights -= self.learning_rate * self.m_dw
+                    self.bias -= self.learning_rate * self.m_db
+                elif self.optimizer == "adam":
+                    self.m_dw = self.momentum * self.m_dw + (1 - self.momentum) * dw
+                    self.m_db = self.momentum * self.m_db + (1 - self.momentum) * db
+                    self.v_dw = self.beta2 * self.v_dw + (1 - self.beta2) * (dw**2)
+                    self.v_db = self.beta2 * self.v_db + (1 - self.beta2) * (db**2)
+
+                    m_dw_corr = self.m_dw / (1 - self.momentum**i)
+                    m_db_corr = self.m_db / (1 - self.momentum**i)
+                    v_dw_corr = self.v_dw / (1 - self.beta2**i)
+                    v_db_corr = self.v_db / (1 - self.beta2**i)
+
+                    self.weights -= (
+                        self.learning_rate
+                        * m_dw_corr
+                        / (np.sqrt(v_dw_corr) + self.epsilon)
+                    )
+                    self.bias -= (
+                        self.learning_rate
+                        * m_db_corr
+                        / (np.sqrt(v_db_corr) + self.epsilon)
+                    )
+
             z = np.dot(X, self.weights) + self.bias
             y_hat = softmax(z)
             cost = compute_cost(y, y_hat)
-
-            dw = (1 / n_samples) * np.dot(X.T, (y_hat - y))
-            db = (1 / n_samples) * np.sum(y_hat - y, axis=0, keepdims=True)
-
-            if self.optimizer == "sgd":
-                # Simple gradient descent
-                self.weights -= self.learning_rate * dw
-                self.bias -= self.learning_rate * db
-
-            elif self.optimizer == "momentum":
-                # Gradient descent with momentum
-                self.m_dw = self.momentum * self.m_dw + (1 - self.momentum) * dw
-                self.m_db = self.momentum * self.m_db + (1 - self.momentum) * db
-                self.weights -= self.learning_rate * self.m_dw
-                self.bias -= self.learning_rate * self.m_db
-
-            elif self.optimizer == "adam":
-                # Adam optimizer
-                self.m_dw = self.momentum * self.m_dw + (1 - self.momentum) * dw
-                self.m_db = self.momentum * self.m_db + (1 - self.momentum) * db
-                self.v_dw = self.beta2 * self.v_dw + (1 - self.beta2) * (dw**2)
-                self.v_db = self.beta2 * self.v_db + (1 - self.beta2) * (db**2)
-
-                m_dw_corr = self.m_dw / (1 - self.momentum**i)
-                m_db_corr = self.m_db / (1 - self.momentum**i)
-                v_dw_corr = self.v_dw / (1 - self.beta2**i)
-                v_db_corr = self.v_db / (1 - self.beta2**i)
-
-                self.weights -= (
-                    self.learning_rate * m_dw_corr / (np.sqrt(v_dw_corr) + self.epsilon)
-                )
-                self.bias -= (
-                    self.learning_rate * m_db_corr / (np.sqrt(v_db_corr) + self.epsilon)
-                )
 
             if i % 100 == 0:
                 print(f"Iteration {i}: Cost = {cost:.4f}")

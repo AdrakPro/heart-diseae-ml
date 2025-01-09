@@ -12,9 +12,10 @@ def sigmoid(z):
 
 
 class BinaryClassificationModel:
-    def __init__(self, learning_rate, num_iterations):
+    def __init__(self, learning_rate, num_iterations, batch_size):
         self.learning_rate = learning_rate
         self.num_iterations = num_iterations
+        self.batch_size = batch_size
         self.w = None
         self.b = None
         self.dw = None
@@ -42,14 +43,14 @@ class BinaryClassificationModel:
 
         return cost
 
-    def fit(self, X, y, batch_size=128):
+    def fit(self, X, y):
         """
         Train the model with gradient descent.
         """
         self.init_params(X.shape[1])
 
         n_samples = X.shape[0]
-        num_batches = int(np.ceil(n_samples / batch_size))
+        num_batches = int(np.ceil(n_samples / self.batch_size))
 
         for i in range(1, self.num_iterations + 1):
             indices = np.arange(n_samples)
@@ -59,8 +60,8 @@ class BinaryClassificationModel:
             y = y[indices]
 
             for batch in range(num_batches):
-                start = batch * batch_size
-                end = min(start + batch_size, n_samples)
+                start = batch * self.batch_size
+                end = min(start + self.batch_size, n_samples)
                 X_batch = X[start:end]
                 y_batch = y[start:end]
 

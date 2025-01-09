@@ -17,18 +17,18 @@ def main():
 
     random_state = 2137
     test_size = 0.33
-    batch_size = 128
 
     # Default params
     hyperparams = {
         "learning_rate": 0.01,
-        "num_iterations": 300,
-        "momentum": 0.5,
+        "num_iterations": 600,
+        "momentum": 0.6,
         "beta2": 0.999,
-        "epsilon": 1e-7,
+        "epsilon": 1e-8,
+        "batch_size": 128,
     }
 
-    tune_hyperparameters = False
+    tune_hyperparameters = True
     transform_to_binary_classification = False
 
     X_train, X_test, y_train, y_test = Preprocessor(data, random_state, test_size).run()
@@ -41,13 +41,15 @@ def main():
         y_test = y_test.values
 
         if tune_hyperparameters:
-            model = tune_binary_with_gridsearch(X_train, y_train, batch_size)
+            model = tune_binary_with_gridsearch(X_train, y_train)
         else:
             model = BinaryClassificationModel(
-                hyperparams["learning_rate"], hyperparams["num_iterations"]
+                hyperparams["learning_rate"],
+                hyperparams["num_iterations"],
+                hyperparams["batch_size"],
             )
 
-        model.fit(X_train, y_train, batch_size)
+        model.fit(X_train, y_train)
 
         accuracy, conf_matrix, class_report, logloss = model.evaluate(X_test, y_test)
         log_metrics(
@@ -66,7 +68,7 @@ def main():
         y_train = encoder.fit_transform(y_train)
 
         if tune_hyperparameters:
-            model = tune_multi(X_train, y_train, n_classes, batch_size)
+            model = tune_multi(X_train, y_train, n_classes)
         else:
             model = MultiClassificationModel(
                 n_classes,
@@ -75,10 +77,11 @@ def main():
                 hyperparams["momentum"],
                 hyperparams["beta2"],
                 hyperparams["epsilon"],
-                optimizer="adam",
+                "adam",
+                hyperparams["batch_size"],
             )
 
-        model.fit(X_train, y_train, batch_size)
+        model.fit(X_train, y_train)
 
         accuracy, conf_matrix, class_report, logloss, roc_auc = model.evaluate(
             X_test, y_test

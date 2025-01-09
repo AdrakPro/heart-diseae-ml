@@ -49,6 +49,7 @@ class MultiClassificationModel:
         beta2,
         epsilon,
         optimizer,
+        batch_size,
     ):
         """
         Initialize the Logistic Regression model.
@@ -69,6 +70,7 @@ class MultiClassificationModel:
         self.beta2 = beta2
         self.epsilon = epsilon
         self.optimizer = optimizer
+        self.batch_size = batch_size
         self.m_dw = None
         self.v_dw = None
         self.m_db = None
@@ -92,7 +94,7 @@ class MultiClassificationModel:
         self.m_db = np.zeros((1, self.n_classes))
         self.v_db = np.zeros((1, self.n_classes))
 
-    def fit(self, X, y, batch_size=128):
+    def fit(self, X, y):
         """
         Trains the multiclass model.
 
@@ -101,7 +103,7 @@ class MultiClassificationModel:
         - y (np.ndarray): One-hot encoded labels.
         """
         n_samples, n_features = X.shape
-        num_batches = int(np.ceil(n_samples / batch_size))
+        num_batches = int(np.ceil(n_samples / self.batch_size))
         self.init_params(n_features)
 
         for i in range(1, self.num_iterations + 1):
@@ -112,8 +114,8 @@ class MultiClassificationModel:
             y = y[indices]
 
             for batch in range(num_batches):
-                start = batch * batch_size
-                end = min(start + batch_size, n_samples)
+                start = batch * self.batch_size
+                end = min(start + self.batch_size, n_samples)
                 X_batch = X[start:end]
                 y_batch = y[start:end]
 

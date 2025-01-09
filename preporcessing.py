@@ -2,12 +2,13 @@ import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, MinMaxScaler
 
 
 class Preprocessor:
     def __init__(self, data, random_state=2137, test_size=0.33):
         # Remove outliners
+        data = data.drop(columns=["id"])
         self.data = data[data["trestbps"] != 0]
 
         self.random_state = random_state
@@ -39,8 +40,8 @@ class Preprocessor:
 
         preprocessor = ColumnTransformer(
             transformers=[
-                ("num", numeric_transformer, numeric_cols),
                 ("cat", categorical_transformer, categorical_cols),
+                ("num", numeric_transformer, numeric_cols),
             ]
         )
 
